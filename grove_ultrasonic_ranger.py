@@ -42,76 +42,20 @@ library.
 """
 
 import time
-from digitalio import DigitalInOut, Direction
-
-# Took this idea from adafruit_debouncer.py
-# Find out whether the current CircuitPython supports time.monotonic_ns(),
-# which doesn't have the accuracy limitation.
-if hasattr(time, "monotonic_ns"):
-    TICKS_PER_SEC = 1_000_000_000
-    MONOTONIC_TICKS = time.monotonic_ns
-else:
-    TICKS_PER_SEC = 1
-    MONOTONIC_TICKS = time.monotonic
-
-_USE_PULSEIO = False
-try:
-	from pulseio import PulseIn
-
-	_USE_PULSEIO = True
-except ImportError:
-	pass  # This is OK, we'll try to bitbang it!
+from pulseio import PulseIn
 
 __version__ = "1.0.0"
 __repo__ = "https://github.com/derhexenmeister/GroveUltrasonicRanger.git"
 
 
 class GroveUltrasonicRanger:
-	"""Control a Grove ultrasonic range sensor.
-
-	Example use:
-
-	::
-
-		import time
-		import board
-
-		import grove_ultrasonic_ranger
-
-		sonar = grove_ultrasonic_ranger.GroveUltrasonicRanger(sig_pin=board.D2)
-
-
-		while True:
-			try:
-				print((sonar.distance,))
-			except RuntimeError as e:
-				print("Retrying due to exception =", e)
-				pass
-			time.sleep(0.1)
-	"""
-
 	def __init__(self, sig_pin, unit=1.0, timeout=1.0):
-		"""
-		:param sig_pin: The pin on the microcontroller that's connected to the
-			``Sig`` pin on the GroveUltrasonicRanger.
-		:type sig_pin: microcontroller.Pin
-		:param float unit: pass in conversion factor for unit conversions from cm
-			for example 2.54 would convert to inches.
-		:param float timeout: Max seconds to wait for a response from the
-			sensor before assuming it isn't going to answer. Should *not* be
-			set to less than 0.05 seconds!
-		"""
-		self._unit = unit
-		self._timeout = timeout*TICKS_PER_SEC
+		self.unit = unit
+		self.timeout = timeout
 
-		if _USE_PULSEIO:
-			self._sig = PulseIn(sig_pin)
-			self._sig.pause()
-			self._sig.clear()
-		else:
-			self._sig = DigitalInOut(sig_pin)
-			self._sig.direction = Direction.OUTPUT
-			self._sig.value = False	 # Set trig low
+		self.echo = PulseIn(sig_pin)
+		self.echo.pause()
+		self.echo.clear()
 
 	def __enter__(self):
 		"""Allows for use in context managers."""
@@ -123,72 +67,23 @@ class GroveUltrasonicRanger:
 
 	def deinit(self):
 		"""De-initialize the sig pin."""
-		self._sig.deinit()
+		self.echo.deinit()
 
-	@property
+	def dist_two_wire(self):
+		self.echo.clear()  # Discard any previous pulse values
+		time.sleep(0.00001)  # 10 micro seconds 10/1000/1000
+		timeout = time.monotonic()
+		self.echo.resume(20)
+		while len(self.echo) == 0:
+			# Wait for a pulse
+			if (time.monotonic() - timeout) > self.timeout:
+				self.echo.pause()
+				return -1
+		self.echo.pause()
+		if self.echo[0] == 65535:
+			return -1
+
+		return (self.echo[0] / 2) / (291 / 10)
+
 	def distance(self):
-		"""Return the distance measured by the sensor in cm (or user specified units.)
-
-		This is the function that will be called most often in user code. The
-		distance is calculated by timing a pulse from the sensor, indicating
-		how long between when the sensor sent out an ultrasonic signal and when
-		it bounced back and was received again.
-
-		If no signal is received, we'll throw a RuntimeError exception. This means
-		either the sensor was moving too fast to be pointing in the right
-		direction to pick up the ultrasonic signal when it bounced back (less
-		likely), or the object off of which the signal bounced is too far away
-		for the sensor to handle. In my experience, the sensor can detect
-		objects over 460 cm away.
-
-		:return: Distance in centimeters (can be divided by a unit conv factor.)
-		:rtype: float
-		"""
-		return self._dist_one_wire()
-
-	def _dist_one_wire(self):
-		if _USE_PULSEIO:
-			self._sig.pause()
-			self._sig.clear()  # Discard any previous pulse values
-		else:
-			#self._sig.direction = Direction.OUTPUT
-			self._sig.value = True	# Set trig high
-			time.sleep(0.00001)	 # 10 micro seconds 10/1000/1000
-			self._sig.value = False	 # Set trig low
-			self._sig.direction = Direction.INPUT
-
-		pulselen = None
-		timestamp = MONOTONIC_TICKS()
-		if _USE_PULSEIO:
-			self._sig.resume(10)
-			while not self._sig:
-				# Wait for a pulse
-				if (MONOTONIC_TICKS() - timestamp) > self._timeout:
-					self._sig.pause()
-					raise RuntimeError("Timed out (pulseio waiting for a pulse)")
-			self._sig.pause()
-			pulselen = self._sig[0]
-		else:
-			# OK no hardware pulse support, we'll just do it by hand!
-			# hang out while the pin is low
-			while not self._sig.value:
-				if MONOTONIC_TICKS() - timestamp > self._timeout:
-					self._sig.direction = Direction.OUTPUT
-					raise RuntimeError("Timed out (gpio, waiting for pulse leading edge)")
-			timestamp = MONOTONIC_TICKS()
-			# track how long pin is high
-			while self._sig.value:
-				if MONOTONIC_TICKS() - timestamp > self._timeout:
-					self._sig.direction = Direction.OUTPUT
-					raise RuntimeError("Timed out (gpio, waiting for pulse trailing edge)")
-			pulselen = MONOTONIC_TICKS() - timestamp
-			self._sig.direction = Direction.OUTPUT
-			pulselen *= (1000000/TICKS_PER_SEC) # convert to us to match pulseio
-		if pulselen >= 65535:
-			raise RuntimeError("Timed out (unreasonable pulse length)")
-
-		# positive pulse time, in seconds, times 340 meters/sec, then
-		# divided by 2 gives meters. Multiply by 100 for cm
-		# 1/1000000 s/us * 340 m/s * 100 cm/m * 2 = 0.017
-		# Divide by the supplied unit conversion factor
-		return (pulselen * 0.017)/self._unit
+		return self.dist_two_wire()
