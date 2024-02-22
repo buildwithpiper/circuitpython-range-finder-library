@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 """
-`grove_ultrasonic`
+`piper_range_finder`
 ====================================================
 
 A CircuitPython library for the Grove ultrasonic range sensor.
@@ -45,7 +45,7 @@ import time
 from pulseio import PulseIn
 
 __version__ = "1.0.0"
-__repo__ = "https://github.com/derhexenmeister/GroveUltrasonicRanger.git"
+__repo__ = "https://github.com/buildwithpiper/circuitpython-range-finder-library.git"
 
 
 class GroveUltrasonicRanger:
