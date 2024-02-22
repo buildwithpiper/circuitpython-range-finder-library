@@ -26,7 +26,7 @@ setup(
     long_description=long_description,
     long_description_content_type="text/x-rst",
     # The project's main homepage.
-    url="https://github.com/derhexenmeister/GroveUltrasonicRanger.git",
+    url="https://github.com/buildwithpiper/circuitpython-range-finder-library.git",
     # Author details
     author="",
     author_email="",
@@ -48,5 +48,5 @@ setup(
     keywords="ultrasonic range sensor grove breakout hardware micropython circuitpython",
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
-    py_modules=["grove_ultrasonic_ranger"],
+    py_modules=["piper_range_finder"],
 )
