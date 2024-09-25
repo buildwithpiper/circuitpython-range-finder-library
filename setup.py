@@ -19,10 +19,10 @@ with open(path.join(here, "README.md"), encoding="utf-8") as f:
     long_description = f.read()
 
 setup(
-    name="grove-ultrasonic-ranger",
+    name="piper_range_finder",
     use_scm_version=True,
     setup_requires=["setuptools_scm"],
-    description="CircuitPython library for Grove ultrasonic ranger.",
+    description="CircuitPython library for Piper ultrasonic ranger.",
     long_description=long_description,
     long_description_content_type="text/x-rst",
     # The project's main homepage.
