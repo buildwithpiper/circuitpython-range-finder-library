@@ -1,6 +1,7 @@
 # The MIT License (MIT)
 #
 # Copyright (c) 2017 Mike Mabey
+# Copyright (c) 2021 Keith Evans, Matthew Matz
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -23,7 +24,7 @@
 `piper_range_finder`
 ====================================================
 
-A CircuitPython library for the Grove ultrasonic range sensor.
+A CircuitPython library for the Piper ultrasonic range sensor.
 Based on the CircuitPython library for the HC-SR04 ultrasonic range sensor.
 
 The HC-SR04 functions by sending an ultrasonic signal, which is reflected by
@@ -48,7 +49,7 @@ __version__ = "1.0.0"
 __repo__ = "https://github.com/buildwithpiper/circuitpython-range-finder-library.git"
 
 
-class GroveUltrasonicRanger:
+class PiperUltrasonicRanger:
 	def __init__(self, sig_pin, unit=1.0, timeout=1.0):
 		self.unit = unit
 		self.timeout = timeout
