@@ -86,5 +86,6 @@ class PiperUltrasonicRanger:
 
 		return (self.echo[0] / 2) / (291 / 10)
 
+    	@property
 	def distance(self):
-		return self.dist_two_wire()
+		return self.dist_two_wire() * self.unit
